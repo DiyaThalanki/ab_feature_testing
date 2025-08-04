@@ -21,4 +21,5 @@ RUN pip install -r requirements.txt
 COPY . .
 
 # Make sure streamlit runs from the correct directory
-CMD ["streamlit", "run", "main.py", "--server.address", "0.0.0.0"]
+CMD ["streamlit", "run", "/app/main.py", "--server.address", "0.0.0.0"]
+
