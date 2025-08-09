@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   backend:
-    image: diyathalanki246/book-backend:latest
+    image: diyathalanki246/ab_feature_testing-backend:latest
     ports:
       - "80:8000"
     environment:
@@ -9,7 +9,7 @@ services:
     restart: always
 
   frontend:
-    image: diyathalanki246/book-frontend:latest
+    image: diyathalanki246/ab_feature_testing-frontend:latest
     ports:
       - "443:8501"
     environment:
