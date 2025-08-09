@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   backend:
-    image: your-dockerhub-username/book-backend:latest
+    image: diyathalanki246/ab_feature_testing-backend:latest
     ports:
       - "8001:8000"
     environment:
@@ -9,7 +9,7 @@ services:
     restart: always
 
   frontend:
-    image: your-dockerhub-username/book-frontend:latest
+    image: diyathalanki246/ab_feature_testing-frontend:latest
     ports:
       - "8501:8501"
     environment:
