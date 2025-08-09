@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  backend:
+    image: your-dockerhub-username/book-backend:latest
+    ports:
+      - "8001:8000"
+    environment:
+      - ENV=staging
+    restart: always
+
+  frontend:
+    image: your-dockerhub-username/book-frontend:latest
+    ports:
+      - "8501:8501"
+    environment:
+      - ENV=staging
+    restart: always
