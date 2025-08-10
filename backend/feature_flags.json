@@ -1,5 +1,5 @@
 {
-  "plan_order": "premium_first",  
-  "discount_type": "20_off_first_month",
-  "urgency_message": "enabled"
+  "plan_order": "premium_first",  // options: "premium_first" or "basic_first"
+  "discount_type": "20_off_first_month",  // options: "20_off_first_month" or "first_month_free"
+  "urgency_message": "enabled"  // options: "enabled" or "disabled"
 }
