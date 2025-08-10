@@ -12,8 +12,20 @@ if 'token' not in st.session_state:
     st.session_state.token = None
 if 'user_info' not in st.session_state:
     st.session_state.user_info = None
+if 'feature_flags' not in st.session_state:
+    st.session_state.feature_flags = {}
 
 # Helper Functions
+# Add this near your other helper functions
+def get_feature_flags():
+    """Fetch feature flags from backend"""
+    if 'feature_flags' not in st.session_state:
+        flags = make_api_request("/feature-flags")
+        st.session_state.feature_flags = flags if flags else {}
+    return st.session_state.feature_flags
+
+
+
 def make_api_request(endpoint: str, method: str = "GET", data: Dict = None, auth_required: bool = False) -> Optional[Dict]:
     """Make API request to FastAPI backend"""
     url = f"{API_BASE_URL}{endpoint}"
@@ -143,6 +155,19 @@ def show_browse_books():
     """Display book browsing page"""
     st.title("📚 Browse Books")
     
+    # Get feature flags
+    flags = get_feature_flags()
+    
+    # Show discount banner for free users
+    if (flags.get('discount_type') == '20_off_first_month' and 
+        st.session_state.user_info['subscription_plan'] == 'free'):
+        st.info("🎉 **Special Offer:** Get 20% off your first month of Premium! [Upgrade Now](/subscription)")
+    
+    # Show urgency message for free users
+    if flags.get('urgency_message') == 'enabled' and st.session_state.user_info['subscription_plan'] == 'free':
+        st.warning("⏰ **Limited Time:** Upgrade to Premium within 24 hours to access all premium books!")
+    
+    
     # Get all books
     books = make_api_request("/books", auth_required=True)
     
@@ -254,15 +279,35 @@ def show_my_library():
 def show_subscription_page():
     """Display subscription management page"""
     st.title("💎 Subscription Plans")
+
+    flags = get_feature_flags()
     
     current_plan = st.session_state.user_info['subscription_plan']
     st.write(f"**Current Plan:** {current_plan.title()}")
+
+    if flags.get('urgency_message') == 'enabled' and current_plan == 'free':
+        st.warning("⏰ **Limited Time Offer!** Upgrade your plan within the next 24 hours to get premium access!")
+
+    # A/B Test: Discount messaging
+    discount_message = ""
+    if flags.get('discount_type') == '20_off_first_month':
+        discount_message = "🎉 **20% OFF** your first month!"
+        st.success(discount_message)
     
     # Get subscription plans
     plans = make_api_request("/subscription-plans", auth_required=True)
     
     if plans:
         st.write("Choose your subscription plan:")
+
+        # A/B Test: Plan ordering
+        if flags.get('plan_order') == 'premium_first':
+            # Show premium plans first
+            plans = sorted(plans, key=lambda x: x['price'], reverse=True)
+        else:
+            # Show basic plans first (default: basic_first or any other value)
+            plans = sorted(plans, key=lambda x: x['price'])
+
         
         for plan in plans:
             with st.container():
@@ -272,6 +317,11 @@ def show_subscription_page():
                 
                 with col1:
                     st.subheader(plan['name'].title())
+                    # Highlight premium plans if premium_first flag is true
+                    if flags.get('plan_order') == 'premium_first' and plan['price'] > 0:
+                        st.subheader(f"⭐ {plan_title} (Recommended)")
+                    else:
+                        st.subheader(plan_title)
                     st.write(plan['description'])
                     st.write(f"Max books: {plan['max_books']}")
                 
@@ -279,17 +329,31 @@ def show_subscription_page():
                     if plan['price'] == 0:
                         st.write("**FREE**")
                     else:
-                        st.write(f"**${plan['price']:.2f}/month**")
+                        # Show discounted price if discount flag is active
+                        if flags.get('discount_type') == '20_off_first_month' and current_plan == 'free':
+                            original_price = plan['price']
+                            discounted_price = original_price * 0.8
+                            st.write(f"~~${original_price:.2f}~~ **${discounted_price:.2f}**/month")
+                            st.caption("First month only")
+                        else:
+                            st.write(f"**${plan['price']:.2f}/month**")
+                        
                 
                 with col3:
                     if current_plan == plan['name']:
                         st.success("Current Plan")
                     else:
-                        if st.button(f"Subscribe", key=f"sub_{plan['id']}"):
+                        # Dynamic button text based on flags
+                        button_text = "Subscribe"
+                        if flags.get('urgency_message') == 'enabled' and plan['price'] > 0:
+                            button_text = "Upgrade Now!"
+                        if flags.get('discount_type') == '20_off_first_month' and plan['price'] > 0 and current_plan == 'free':
+                            button_text = "Get 20% Off!"
+                        
+                        if st.button(button_text, key=f"sub_{plan['id']}"):
                             response = make_api_request(f"/subscribe/{plan['id']}", "POST", auth_required=True)
                             if response:
                                 st.success(f"Subscribed to {plan['name']} plan!")
-                                # Refresh user info
                                 st.session_state.user_info['subscription_plan'] = plan['name']
                                 st.rerun()
                             else:
@@ -345,4 +409,5 @@ def main():
         show_subscription_page()
 
 if __name__ == "__main__":
+
     main()
