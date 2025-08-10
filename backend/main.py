@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker, Session, relationship
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 from typing import Optional, List
+from feature_flags import get_flags
 import jwt  
 import bcrypt
 import os
@@ -168,7 +169,14 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
+
+
 # API Endpoints
+
+@app.get("/feature-flags")
+def feature_flags():
+    return get_flags()
+
 
 @app.get("/")
 def read_root():
@@ -334,3 +342,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
